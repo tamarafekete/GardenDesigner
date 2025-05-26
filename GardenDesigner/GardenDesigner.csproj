@@ -9,7 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="GlObjectWithTexture.cs" />
+    <Compile Remove="ObjResourceReaderWithTexture.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Resources\ground.jpg" />
+    <None Remove="Resources\Lego\lego.mtl" />
+    <None Remove="Resources\Lego\lego.obj" />
     <None Remove="Resources\skybox.png" />
     <None Remove="Shaders\FragmentShader.frag" />
     <None Remove="Shaders\VertexShader.vert" />
@@ -17,6 +24,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\ground.jpg" />
+    <EmbeddedResource Include="Resources\Lego\lego.mtl" />
+    <EmbeddedResource Include="Resources\Lego\lego.obj" />
     <EmbeddedResource Include="Resources\skybox.png" />
     <EmbeddedResource Include="Shaders\FragmentShader.frag" />
     <EmbeddedResource Include="Shaders\VertexShader.vert" />

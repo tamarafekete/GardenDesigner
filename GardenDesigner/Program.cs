@@ -4,9 +4,6 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.OpenGL.Extensions.ImGui;
 using Silk.NET.Windowing;
-using System.Numerics;
-using System;
-using System.Drawing;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -17,8 +14,11 @@ namespace Szeminarium1_24_02_17_2
     internal static class Program
     {
         private static CameraDescriptor cameraDescriptor = new();
+        private static ExternalCameraDescriptor externalCameraDescriptor = new();
+        private static bool externalCamera = true;
+        private static GardenerArrangementModel gardenerArrangementModel = new();
 
-        private static CubeArrangementModel cubeArrangementModel = new();
+        private static bool[,] positionMatrix;
 
         private static IWindow window;
 
@@ -34,6 +34,22 @@ namespace Szeminarium1_24_02_17_2
 
         private static GlCube skyBox;
 
+        private static ObjModel gardener;
+        private static GLMesh gardenerMesh;
+
+        private static ObjModel fence;
+        private static GLMesh[] fenceMesh;
+
+        private static ObjModel[] trees;
+        private static float[] treeScales;
+
+        private static int[] plantIndexes;
+        private static GLMesh[] plantMeshes;
+        private static int plantLength = 1;
+        private static Tuple<int, int>[] plantCoords;
+        private static string[] plantNames;
+        private static int selectedIndex = 0;
+
         private static float Shininess = 50;
 
         private const string ModelMatrixVariableName = "uModel";
@@ -48,6 +64,7 @@ namespace Szeminarium1_24_02_17_2
         private const string ViewPosVariableName = "viewPos";
         private const string ShininessVariableName = "shininess";
 
+
         static void Main(string[] args)
         {
             WindowOptions windowOptions = WindowOptions.Default;
@@ -56,6 +73,30 @@ namespace Szeminarium1_24_02_17_2
 
             // on some systems there is no depth buffer by default, so we need to make sure one is created
             windowOptions.PreferredDepthBufferBits = 24;
+
+            fenceMesh = new GLMesh[40];
+            plantIndexes = new int[20];
+            plantMeshes =new GLMesh[20];
+            trees = new ObjModel[20];
+            treeScales = new float[20];
+            plantCoords = new Tuple<int, int>[20];
+            plantNames = new string[4];
+
+            positionMatrix = new bool[40, 40];
+            for (int i = 0; i < 40; i++)
+            {
+                for (int j = 0; j < 40; j++)
+                {
+                    if (i>1 && i< 39 && j>1 && j < 39)
+                    {
+                        positionMatrix[i, j] = true;
+                    }
+                    else
+                    {
+                        positionMatrix[i, j] = false;
+                    }
+                }
+            }
 
             window = Window.Create(windowOptions);
 
@@ -143,16 +184,24 @@ namespace Szeminarium1_24_02_17_2
             switch (key)
             {
                 case Key.W:
-                    cameraDescriptor.MoveForward();
+                    cameraDescriptor.MoveForward(positionMatrix); 
+                    gardenerArrangementModel.MoveForward(positionMatrix);
+                    externalCameraDescriptor.MoveForward(positionMatrix);
                     break;
                 case Key.S:
-                    cameraDescriptor.MoveBackward();
+                    cameraDescriptor.MoveBackward(positionMatrix);
+                    gardenerArrangementModel.MoveBackward(positionMatrix);
+                    externalCameraDescriptor.MoveBackward(positionMatrix);
                     break;
                 case Key.A:
-                    cameraDescriptor.MoveLeft();
+                    cameraDescriptor.MoveLeft(positionMatrix);
+                    gardenerArrangementModel.MoveLeft(positionMatrix);
+                    externalCameraDescriptor.MoveLeft(positionMatrix);
                     break;
                 case Key.D:
-                    cameraDescriptor.MoveRight();
+                    cameraDescriptor.MoveRight(positionMatrix);
+                    gardenerArrangementModel.MoveRight(positionMatrix);
+                    externalCameraDescriptor.MoveRight(positionMatrix);
                     break;
                 case Key.E:
                     cameraDescriptor.MoveUp();  
@@ -160,14 +209,15 @@ namespace Szeminarium1_24_02_17_2
                 case Key.Q:
                     cameraDescriptor.MoveDown();
                     break;
-                case Key.Space:
-                    cubeArrangementModel.AnimationEnabeld = !cubeArrangementModel.AnimationEnabeld;
-                    break;
                 case Key.Left:
                     cameraDescriptor.Rotate(-5f, 0); // Rotate left (yaw)
+                    gardenerArrangementModel.RotateLeft(5f);
+                    externalCameraDescriptor.Rotate(3.25f, 0);
                     break;
                 case Key.Right:
                     cameraDescriptor.Rotate(5f, 0);  // Rotate right (yaw)
+                    gardenerArrangementModel.RotateRight(5f);
+                    externalCameraDescriptor.Rotate(-3.25f, 0);
                     break;
                 case Key.Up:
                     cameraDescriptor.Rotate(0, 5f);  // Rotate up (pitch)
@@ -175,6 +225,10 @@ namespace Szeminarium1_24_02_17_2
                 case Key.Down:
                     cameraDescriptor.Rotate(0, -5f); // Rotate down (pitch)
                     break;
+                case Key.V:
+                    externalCamera = !externalCamera;
+                    break;
+
             }
         }
 
@@ -184,7 +238,6 @@ namespace Szeminarium1_24_02_17_2
             // multithreaded
             // make sure it is threadsafe
             // NO GL calls
-            cubeArrangementModel.AdvanceTime(deltaTime);
 
             controller.Update((float)deltaTime);
         }
@@ -214,12 +267,77 @@ namespace Szeminarium1_24_02_17_2
 
             DrawSkyBox();
 
-            //ImGuiNET.ImGui.ShowDemoWindow();
-           /* ImGuiNET.ImGui.Begin("Lighting properties",
-                ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar);
-            ImGuiNET.ImGui.SliderFloat("Shininess", ref Shininess, 1, 200);
-            ImGuiNET.ImGui.End();*/
+            if (externalCamera)
+            {
+                DrawGardener();
+            }
+            DrawFence();
+            DrawPlants();
 
+            ImGuiNET.ImGui.Begin("Camera", ImGuiNET.ImGuiWindowFlags.AlwaysAutoResize | ImGuiNET.ImGuiWindowFlags.NoCollapse);
+            if (ImGuiNET.ImGui.RadioButton("External Camera", externalCamera))
+            {
+                externalCamera = true;
+            }
+            if(ImGuiNET.ImGui.RadioButton("First Person Camera", !externalCamera))
+            {
+                externalCamera = false;
+            }
+            ImGuiNET.ImGui.End();
+
+            ImGuiNET.ImGui.Begin("Plant", ImGuiNET.ImGuiWindowFlags.AlwaysAutoResize | ImGuiNET.ImGuiWindowFlags.NoCollapse);
+            if (ImGui.Combo("##actionCombo", ref selectedIndex, plantNames, plantNames.Length))
+            {
+                if (selectedIndex != 0)
+                {
+                    plantIndexes[plantLength] = selectedIndex-1;
+                    var posX = cameraDescriptor.Position.X;
+                    var posZ = cameraDescriptor.Position.Z;
+                    var yaw = cameraDescriptor.Yaw - ((int)cameraDescriptor.Yaw/180)*180;
+                    if (yaw <= -67.5 && yaw > -112.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX, (int)posZ-1);
+                        positionMatrix[(int)posX + 20, (int)posZ + 19] = false;
+                    }
+                    else if (yaw <= -112.5 && yaw > -157.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX-1, (int)posZ-1);
+                        positionMatrix[(int)posX + 19, (int)posZ + 19] = false;
+                    }
+                    else if (yaw <= -157 || yaw > 157.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX-1, (int)(posZ-1));
+                        positionMatrix[(int)posX + 19, (int)posZ + 20] = false;
+                    }
+                    else if (yaw <= 157.5 && yaw > 112.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX - 1, (int)posZ + 1);
+                        positionMatrix[(int)posX + 19, (int)posZ + 21] = false;
+                    }
+                    else if(yaw <= 112.5 && yaw > 67.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX, (int)posZ + 1);
+                        positionMatrix[(int)posX+20, (int)posZ+21] = false;
+                    }
+                    else if(yaw <= 67.5 && yaw > 22.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX + 1, (int)posZ + 1);
+                        positionMatrix[(int)posX + 21, (int)posZ + 21]=false;
+                    }
+                    else if(yaw <=22.5 && yaw > -22.5)
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX + 1, (int)posZ);
+                        positionMatrix[(int)posX + 21, (int)posZ + 20] = false;
+                    }
+                    else
+                    {
+                        plantCoords[plantLength] = new Tuple<int, int>((int)posX+1, (int)(posZ-1));
+                    }
+                    plantLength++;
+                    selectedIndex = 0;
+                }
+            }
+            ImGuiNET.ImGui.End();
 
             controller.Render();
         }
@@ -249,6 +367,91 @@ namespace Szeminarium1_24_02_17_2
             Gl.BindTexture(TextureTarget.Texture2D, 0);
             CheckError();
         }
+
+        private static unsafe void DrawGardener()
+        {
+            var modelMatrixForGardener = Matrix4X4.CreateScale(0.5f);
+            Matrix4X4<float> trans = Matrix4X4.CreateTranslation((float)gardenerArrangementModel.positionX, 0.7f, (float)gardenerArrangementModel.positionZ);
+            Matrix4X4<float> rotx = Matrix4X4.CreateRotationX(0f);
+            Matrix4X4<float> roty = Matrix4X4.CreateRotationY((float)gardenerArrangementModel.AngleY);
+            modelMatrixForGardener = modelMatrixForGardener * roty * trans;
+            SetModelMatrix(modelMatrixForGardener);
+            gardenerMesh = new GLMesh(Gl, gardener);
+            gardenerMesh.Draw(Gl);
+        }
+
+        private static unsafe void DrawFence()
+        {
+            float posX = -19.25f;
+            float posZ = -19.9f;
+            Matrix4X4<float> rotx = Matrix4X4.CreateRotationX(-(float)Math.PI / 2);
+            for (int i = 0; i < 10; i++)
+            {
+                var scale = Matrix4X4.CreateScale(0.0147f);
+                var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
+                var modelMatrix = scale * rotx * trans;
+                SetModelMatrix(modelMatrix);
+                fenceMesh[i] = new GLMesh(Gl, fence);
+                fenceMesh[i].Draw(Gl);
+                posX += 3.98f;
+            }
+            Matrix4X4<float> roty = Matrix4X4.CreateRotationY((float)Math.PI / 2);
+            posZ = -16.6f;
+            posX = 19.75f;
+            for (int i = 10; i < 20; i++)
+            {
+                var scale = Matrix4X4.CreateScale(0.0147f);
+                var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
+                var modelMatrix = scale * rotx * roty * trans;
+                SetModelMatrix(modelMatrix);
+                fenceMesh[i] = new GLMesh(Gl, fence);
+                fenceMesh[i].Draw(Gl);
+                posZ += 3.98f;
+            }
+            posX = 16.6f;
+            posZ = 19.75f;
+            for (int i = 20; i < 30; i++)
+            {
+                var scale = Matrix4X4.CreateScale(0.0147f);
+                var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
+                var modelMatrix = scale * rotx * trans;
+                SetModelMatrix(modelMatrix);
+                fenceMesh[i] = new GLMesh(Gl, fence);
+                fenceMesh[i].Draw(Gl);
+                posX -= 3.98f;
+            }
+            posX = -20f;
+            posZ = 19.1f;
+            for (int i = 30; i < 40; i++)
+            {
+                var scale = Matrix4X4.CreateScale(0.0147f);
+                var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
+                var modelMatrix = scale * rotx * roty * trans;
+                SetModelMatrix(modelMatrix);
+                fenceMesh[i] = new GLMesh(Gl, fence);
+                fenceMesh[i].Draw(Gl);
+                posZ -= 3.98f;
+            }
+        }
+
+        private static unsafe void DrawPlants()
+        {
+            plantIndexes[0] = 2;
+            plantCoords[0] = new Tuple<int, int>(10, 12);
+            plantCoords[1] = new Tuple<int, int>(5, -4);
+            plantIndexes[1] = 1;
+
+            for(int i = 0; i < plantLength; i++)
+            {
+                var scale = Matrix4X4.CreateScale(treeScales[plantIndexes[i]]);
+                var trans = Matrix4X4.CreateTranslation(plantCoords[i].Item1, 0f, plantCoords[i].Item2);
+                var modelMatrix = scale*trans;
+                SetModelMatrix(modelMatrix);
+                plantMeshes[i] = new GLMesh(Gl, trees[plantIndexes[i]]);
+                plantMeshes[i].Draw(Gl);
+            }
+        }
+
 
         private static unsafe void SetLightColor()
         {
@@ -399,6 +602,21 @@ namespace Szeminarium1_24_02_17_2
             //glCubeRotating = GlCube.CreateCubeWithFaceColors(Gl, face1Color, face2Color, face3Color, face4Color, face5Color, face6Color);
 
             skyBox = GlCube.CreateInteriorCube(Gl, "");
+            gardener = ObjModel.LoadFromFile("../../../Resources/Lego/lego.obj");
+            fence = ObjModel.LoadFromFile("../../../Resources/Fence/Fence.obj");
+            plantNames[0] = "Select a plant";
+            trees[0] = ObjModel.LoadFromFile("../../../Resources/Tree/Tree.obj");
+            treeScales[0] = 0.8f;
+            plantNames[1] = "Tree 1";
+            trees[1] = ObjModel.LoadFromFile("../../../Resources/Tree 02/Tree.obj");
+            treeScales[1] = 0.8f;
+            plantNames[2] = "Tree 2";
+            trees[2] = ObjModel.LoadFromFile("../../../Resources/rose/rose.obj");
+            treeScales[2] = 0.01f;
+            plantNames[3] = "Rose";
+            
+
+           // gardener = ObjResourceReaderWithTexture.CreateObjectWithTexture(Gl, "GardenDesigner.Resources.Lego.lego.obj", "GardenDesigner.Resources.Lego.lego.mtl", "../../../Resources/Lego");
         }
 
 
@@ -425,8 +643,16 @@ namespace Szeminarium1_24_02_17_2
 
         private static unsafe void SetViewMatrix()
         {
-            var viewMatrix = cameraDescriptor.GetViewMatrix();
-            int location = Gl.GetUniformLocation(program, ViewMatrixVariableName);
+            Matrix4X4<float> viewMatrix;
+            if (!externalCamera)
+            {
+                viewMatrix = cameraDescriptor.GetViewMatrix();
+            }
+            else
+            {
+                viewMatrix = externalCameraDescriptor.GetViewMatrix();
+            }
+                int location = Gl.GetUniformLocation(program, ViewMatrixVariableName);
 
             if (location == -1)
             {
