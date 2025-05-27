@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Resources\cat\cat.obj" />
     <None Remove="Resources\ground.jpg" />
     <None Remove="Resources\Lego\lego.mtl" />
     <None Remove="Resources\Lego\lego.obj" />
@@ -23,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\cat\cat.obj" />
     <EmbeddedResource Include="Resources\ground.jpg" />
     <EmbeddedResource Include="Resources\Lego\lego.mtl" />
     <EmbeddedResource Include="Resources\Lego\lego.obj" />

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
+using Szeminarium1_24_02_17_2;
 
 public class ObjModel
 {

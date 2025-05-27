@@ -22,7 +22,12 @@ namespace Szeminarium1_24_02_17_2
         private Vector3D<float> front = -Vector3D<float>.UnitZ;
         private Vector3D<float> right = Vector3D<float>.UnitX;
 
+        private GardenerArrangementModel gardener;
 
+        public ExternalCameraDescriptor(GardenerArrangementModel model)
+        {
+            this.gardener = model;
+        }
         public Matrix4X4<float> GetViewMatrix()
         {
             UpdatePosition();
@@ -31,44 +36,49 @@ namespace Szeminarium1_24_02_17_2
 
         public void MoveForward(bool[,] positionMatrix)
         {
-            Vector3D<float> target = Target + front * MoveSpeed;
-            int posX = (int)target.X + 20;
-            int posZ = (int)target.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Target = target;
-            }
+            /* Vector3D<float> target = Target + front * MoveSpeed;
+             int posX = (int)target.X + 20;
+             int posZ = (int)target.Z + 20;
+             if (positionMatrix[posX, posZ])
+             {
+                 Target = target;
+             }*/
+            Target = new Vector3D<float> ( (float)gardener.positionX, 1f, (float)gardener.positionZ );
+
 
         }
         public void MoveBackward(bool[,] positionMatrix)
         {
-            Vector3D<float> position = Target - front * MoveSpeed;
-            int posX = (int)position.X + 20;
-            int posZ = (int)position.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Target = position;
-            }
+            /* Vector3D<float> position = Target - front * MoveSpeed;
+             int posX = (int)position.X + 20;
+             int posZ = (int)position.Z + 20;
+             if (positionMatrix[posX, posZ])
+             {
+                 Target = position;
+             }*/
+            Target = new Vector3D<float>((float)gardener.positionX, 1f, (float)gardener.positionZ);
         }
         public void MoveLeft(bool[,] positionMatrix)
         {
-            Vector3D<float> position = Target - right * MoveSpeed;
-            int posX = (int)position.X + 20;
-            int posZ = (int)position.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Target = position;
-            }
+            /* Vector3D<float> position = Target - right * MoveSpeed;
+             int posX = (int)position.X + 20;
+             int posZ = (int)position.Z + 20;
+             if (positionMatrix[posX, posZ])
+             {
+                 Target = position;
+             }*/
+            Target = new Vector3D<float>((float)gardener.positionX, 1f, (float)gardener.positionZ);
         }
         public void MoveRight(bool[,] positionMatrix)
         {
-            Vector3D<float> position = Target + right * MoveSpeed;
+            /*Vector3D<float> position = Target + right * MoveSpeed;
             int posX = (int)position.X + 20;
             int posZ = (int)position.Z + 20;
             if (positionMatrix[posX, posZ])
             {
                 Target = position;
-            }
+            }*/
+            Target = new Vector3D<float>((float)gardener.positionX, 1f, (float)gardener.positionZ);
         }
 
         private void UpdatePosition()

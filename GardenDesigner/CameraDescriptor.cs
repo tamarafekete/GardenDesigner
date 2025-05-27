@@ -14,6 +14,12 @@ namespace Szeminarium1_24_02_17_2
         private Vector3D<float> right = Vector3D<float>.UnitX;
         private const float Sensitivity = 0.5f;
         private const float MoveSpeed = 0.5f;
+        private GardenerArrangementModel gardener;
+
+        public CameraDescriptor(GardenerArrangementModel model)
+        {
+            this.gardener = model;
+        }
 
         public Matrix4X4<float> GetViewMatrix()
         {
@@ -21,41 +27,46 @@ namespace Szeminarium1_24_02_17_2
         }
 
         public void MoveForward(bool[,] positionMatrix) {
-            Vector3D<float> position = Position + front * MoveSpeed;
+            /*Vector3D<float> position = Position + front * MoveSpeed;
             int posX = (int)position.X+20;
             int posZ = (int)position.Z+20;
             if (positionMatrix[posX, posZ])
             {
                 Position = position;
-            }
+            }*/
+            Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
             
         }
         public void MoveBackward(bool[,] positionMatrix) { 
-            Vector3D<float> position = Position - front * MoveSpeed;
+            /*Vector3D<float> position = Position - front * MoveSpeed;
             int posX = (int)position.X + 20;
             int posZ = (int)position.Z + 20;
             if (positionMatrix[posX, posZ])
             {
                 Position = position;
-            }
+            }*/
+            Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
         }
         public void MoveLeft(bool[,] positionMatrix) { 
-            Vector3D<float> position = Position - right * MoveSpeed;
+           /* Vector3D<float> position = Position - right * MoveSpeed;
             int posX = (int)position.X + 20;
             int posZ = (int)position.Z + 20;
             if (positionMatrix[posX, posZ])
             {
                 Position = position;
-            }
+            }*/
+            Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
         }
         public void MoveRight(bool[,] positionMatrix) { 
-            Vector3D<float> position = Position + right * MoveSpeed;
+           /* Vector3D<float> position = Position + right * MoveSpeed;
             int posX = (int)position.X + 20;
             int posZ = (int)position.Z + 20;
             if (positionMatrix[posX, posZ])
             {
                 Position = position;
-            }
+
+            }*/
+            Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
         }
         public void MoveUp() => Position += up * MoveSpeed;
         public void MoveDown() => Position -= up * MoveSpeed;
