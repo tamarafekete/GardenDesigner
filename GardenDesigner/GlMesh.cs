@@ -1,85 +1,100 @@
-﻿
-using ImGuiNET;
-using Silk.NET.Input;
-using Silk.NET.Maths;
-using Silk.NET.OpenGL;
-using Silk.NET.OpenGL.Extensions.ImGui;
-using Silk.NET.Windowing;
+﻿using Silk.NET.OpenGL;
 using System.Numerics;
-using System;
-using System.Drawing;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+
 public class GLMesh
 {
-    public uint VAO;
-    public uint VBO;
-    public uint EBO;
-    public int IndexCount;
+    public List<GLSubMesh> SubMeshes { get; } = new();
 
-    public unsafe GLMesh(GL gl, ObjModel model)
+    public GLMesh(GL gl, ObjModel model)
     {
-        IndexCount = model.Indices.Count;
-
-        float[] vertexData = new float[model.Indices.Count * 8]; // pos(3) + uv(2) + normal(3)
-        uint[] indexData = new uint[model.Indices.Count];
-
-        for (int i = 0; i < model.Indices.Count; i++)
+        foreach (var group in model.MaterialGroups)
         {
-            var (vIdx, vtIdx, vnIdx) = model.Indices[i];
-            var pos = model.Vertices[vIdx];
-            var uv = vtIdx >= 0 ? model.TexCoords[vtIdx] : Vector2.Zero;
-            var normal = vnIdx >= 0 ? model.Normals[vnIdx] : Vector3.UnitY;
+            SubMeshes.Add(new GLSubMesh(gl, group, model));
+        }
+    }
 
-            vertexData[i * 8 + 0] = pos.X;
-            vertexData[i * 8 + 1] = pos.Y;
-            vertexData[i * 8 + 2] = pos.Z;
-            vertexData[i * 8 + 3] = uv.X;
-            vertexData[i * 8 + 4] = uv.Y;
-            vertexData[i * 8 + 5] = normal.X;
-            vertexData[i * 8 + 6] = normal.Y;
-            vertexData[i * 8 + 7] = normal.Z;
+    public unsafe void Draw(GL gl, ObjModel model, uint shaderProgram)
+    {
+        foreach (var mesh in SubMeshes)
+        {
+            if (model.Materials.TryGetValue(mesh.MaterialName, out var material) && material.TextureId.HasValue)
+            {
+                gl.ActiveTexture(TextureUnit.Texture0);
+                gl.BindTexture(TextureTarget.Texture2D, material.TextureId.Value);
 
-            indexData[i] = (uint)i; // each vertex is unique after interleaving
+                int texLoc = gl.GetUniformLocation(shaderProgram, "uTexture");
+                gl.Uniform1(texLoc, 0);
+            }
+
+            gl.BindVertexArray(mesh.VAO);
+            gl.DrawElements(PrimitiveType.Triangles, (uint)mesh.IndexCount, DrawElementsType.UnsignedInt, null);
         }
 
-        // Create VAO, VBO, EBO
+        gl.BindVertexArray(0);
+    }
+}
+
+public class GLSubMesh
+{
+    public uint VAO, VBO, EBO;
+    public int IndexCount;
+    public string MaterialName;
+
+    public GLSubMesh(GL gl, MaterialGroup group, ObjModel model)
+    {
+        MaterialName = group.MaterialName;
+
+        var vertexData = new List<float>();
+        var indexData = new List<uint>();
+        var vertexMap = new Dictionary<(int v, int vt, int vn), uint>();
+        uint index = 0;
+
+        foreach (var (v, vt, vn) in group.Indices)
+        {
+            var key = (v, vt, vn);
+            if (!vertexMap.TryGetValue(key, out uint idx))
+            {
+                var pos = model.Positions[v];
+                var tex = vt >= 0 ? model.TexCoords[vt] : Vector2.Zero;
+                var norm = vn >= 0 ? model.Normals[vn] : Vector3.UnitY;
+
+                vertexData.AddRange(new float[] {
+                    pos.X, pos.Y, pos.Z,
+                    norm.X, norm.Y, norm.Z,
+                    tex.X, tex.Y
+                });
+
+                idx = index++;
+                vertexMap[key] = idx;
+            }
+            indexData.Add(idx);
+        }
+
+        IndexCount = indexData.Count;
+
+        // Upload to OpenGL
         VAO = gl.GenVertexArray();
         VBO = gl.GenBuffer();
         EBO = gl.GenBuffer();
 
         gl.BindVertexArray(VAO);
 
-        gl.BindBuffer(GLEnum.ArrayBuffer, VBO);
-        fixed (float* v = &vertexData[0])
-        {
-            gl.BufferData(GLEnum.ArrayBuffer, (nuint)(vertexData.Length * sizeof(float)), v, GLEnum.StaticDraw);
-        }
+        gl.BindBuffer(BufferTargetARB.ArrayBuffer, VBO);
+        float[] vertexArray = vertexData.ToArray();
+        gl.BufferData<float>(BufferTargetARB.ArrayBuffer, vertexData.ToArray(), BufferUsageARB.StaticDraw);
 
-        gl.BindBuffer(GLEnum.ElementArrayBuffer, EBO);
-        fixed (uint* i = &indexData[0])
-        {
-            gl.BufferData(GLEnum.ElementArrayBuffer, (nuint)(indexData.Length * sizeof(uint)), i, GLEnum.StaticDraw);
-        }
+        gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, EBO);
+        gl.BufferData<uint>(BufferTargetARB.ElementArrayBuffer, indexData.ToArray(), BufferUsageARB.StaticDraw);
 
-        // Position
-        gl.EnableVertexAttribArray(0);
-        gl.VertexAttribPointer(0, 3, GLEnum.Float, false, 8 * sizeof(float), (void*)0);
-        // TexCoord
-        gl.EnableVertexAttribArray(1);
-        gl.VertexAttribPointer(1, 2, GLEnum.Float, false, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-        // Normal
-        gl.EnableVertexAttribArray(2);
-        gl.VertexAttribPointer(2, 3, GLEnum.Float, false, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+        int stride = sizeof(float) * 8;
+        gl.EnableVertexAttribArray(0); // position
+        gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, (uint)stride, 0);
+        gl.EnableVertexAttribArray(1); // normal
+        gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, (uint)stride, 12);
+        gl.EnableVertexAttribArray(2); // texcoord
+        gl.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, (uint)stride, 24);
 
-        gl.BindVertexArray(0);
-    }
-
-    public unsafe void Draw(GL gl)
-    {
-        gl.BindVertexArray(VAO);
-        gl.DrawElements(GLEnum.Triangles, (uint)IndexCount, GLEnum.UnsignedInt, null);
         gl.BindVertexArray(0);
     }
 }
+

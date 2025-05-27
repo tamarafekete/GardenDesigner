@@ -7,6 +7,7 @@ using Silk.NET.Windowing;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System.Reflection;
 
 
 namespace Szeminarium1_24_02_17_2
@@ -85,7 +86,7 @@ namespace Szeminarium1_24_02_17_2
             trees = new ObjModel[20];
             treeScales = new float[20];
             plantCoords = new Tuple<int, int>[20];
-            plantNames = new string[4];
+            plantNames = new string[8];
 
             positionMatrix = new bool[40, 40];
             for (int i = 0; i < 40; i++)
@@ -236,7 +237,13 @@ namespace Szeminarium1_24_02_17_2
                 case Key.Space:
                     catArrangementModel.AnimationEnabeld = true;
                     break;
-
+                case Key.L:
+                    externalCameraDescriptor.Rotate(5f, 0);
+                    break;
+                case Key.R:
+                    externalCameraDescriptor.Rotate(-5f, 0);
+                    break;
+    
             }
         }
 
@@ -271,10 +278,8 @@ namespace Szeminarium1_24_02_17_2
 
             DrawWorld();
 
-           // DrawRevolvingCube();
-
+            // DrawRevolvingCube();
             DrawSkyBox();
-
             if (externalCamera)
             {
                 DrawGardener();
@@ -388,7 +393,7 @@ namespace Szeminarium1_24_02_17_2
             Matrix4X4<float> roty = Matrix4X4.CreateRotationY((float)gardenerArrangementModel.AngleY);
             modelMatrixForGardener = modelMatrixForGardener * roty * trans;
             SetModelMatrix(modelMatrixForGardener);
-            gardenerMesh.Draw(Gl);
+            gardenerMesh.Draw(Gl, gardener, program);
         }
 
         private static unsafe void DrawFence()
@@ -402,8 +407,8 @@ namespace Szeminarium1_24_02_17_2
                 var scale = Matrix4X4.CreateScale(0.0147f);
                 var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
                 var modelMatrix = scale * rotx * trans;
-                SetModelMatrix(modelMatrix);
-                fenceMesh.Draw(Gl);
+                SetModelMatrix(modelMatrix);                
+                fenceMesh.Draw(Gl, fence, program);
                 posX += 3.98f;
             }
             Matrix4X4<float> roty = Matrix4X4.CreateRotationY((float)Math.PI / 2);
@@ -415,7 +420,7 @@ namespace Szeminarium1_24_02_17_2
                 var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
                 var modelMatrix = scale * rotx * roty * trans;
                 SetModelMatrix(modelMatrix);
-                fenceMesh.Draw(Gl);
+                fenceMesh.Draw(Gl, fence, program);
                 posZ += 3.98f;
             }
             posX = 16.6f;
@@ -426,7 +431,7 @@ namespace Szeminarium1_24_02_17_2
                 var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
                 var modelMatrix = scale * rotx * trans;
                 SetModelMatrix(modelMatrix);
-                fenceMesh.Draw(Gl);
+                fenceMesh.Draw(Gl, fence, program);
                 posX -= 3.98f;
             }
             posX = -20f;
@@ -436,8 +441,8 @@ namespace Szeminarium1_24_02_17_2
                 var scale = Matrix4X4.CreateScale(0.0147f);
                 var trans = Matrix4X4.CreateTranslation(posX, 0f, posZ);
                 var modelMatrix = scale * rotx * roty * trans;
-                SetModelMatrix(modelMatrix);
-                fenceMesh.Draw(Gl);
+                SetModelMatrix(modelMatrix);                
+                fenceMesh.Draw(Gl, fence, program);
                 posZ -= 3.98f;
             }
         }
@@ -457,7 +462,7 @@ namespace Szeminarium1_24_02_17_2
                 var trans = Matrix4X4.CreateTranslation(plantCoords[i].Item1, 0f, plantCoords[i].Item2);
                 var modelMatrix = scale*trans;
                 SetModelMatrix(modelMatrix);
-                plantMeshes[plantIndexes[i]].Draw(Gl);
+                plantMeshes[plantIndexes[i]].Draw(Gl, trees[plantIndexes[i]], program);
             }
         }
 
@@ -606,21 +611,48 @@ namespace Szeminarium1_24_02_17_2
             skyBox = GlCube.CreateInteriorCube(Gl, "");
             gardener = ObjModel.LoadFromFile("../../../Resources/Lego/lego.obj");
             gardenerMesh = new GLMesh(Gl, gardener);
+            foreach (var material in gardener.Materials.Values)
+            {
+                if (!string.IsNullOrEmpty(material.DiffuseTexturePath))
+                    material.TextureId = TextureLoader.LoadTexture(Gl, material.DiffuseTexturePath);
+            }
             fence = ObjModel.LoadFromFile("../../../Resources/Fence/Fence.obj");
             fenceMesh = new GLMesh(Gl, fence);
+            foreach (var material in fence.Materials.Values)
+            {
+                if (!string.IsNullOrEmpty(material.DiffuseTexturePath))
+                    material.TextureId = TextureLoader.LoadTexture(Gl, material.DiffuseTexturePath);
+            }
             plantNames[0] = "Select a plant";
             trees[0] = ObjModel.LoadFromFile("../../../Resources/Tree/Tree.obj");
             treeScales[0] = 0.8f;
             plantNames[1] = "Tree 1";
-            trees[1] = ObjModel.LoadFromFile("../../../Resources/Tree 02/Tree.obj");
+            trees[1] = ObjModel.LoadFromFile("../../../Resources/Tree_02/Tree.obj");
             treeScales[1] = 0.8f;
             plantNames[2] = "Tree 2";
             trees[2] = ObjModel.LoadFromFile("../../../Resources/rose/rose.obj");
             treeScales[2] = 0.01f;
             plantNames[3] = "Rose";
-            for (int i = 0; i < 3; i++)
+            trees[3] = ObjModel.LoadFromFile("../../../Resources/Low/Low Grass.obj");
+            plantNames[4] = "Grass";
+            treeScales[3] = 1.5f;
+            trees[4] = ObjModel.LoadFromFile("../../../Resources/Tree/3d files/tree.obj");
+            plantNames[5] = "Tree 3";
+            treeScales[4] = 0.5f;
+            trees[5] = ObjModel.LoadFromFile("../../../Resources/OBJ/Wood.obj");
+            plantNames[6] = "Roundwoods";
+            treeScales[5] = 0.2f;
+            trees[6] = ObjModel.LoadFromFile("../../../Resources/bench.obj");
+            plantNames[7] = "Bench";
+            treeScales[6] = 0.005f;
+            for (int i = 0; i < 7; i++)
             {
                 plantMeshes[i] = new GLMesh(Gl, trees[i]);
+                foreach (var material in trees[i].Materials.Values)
+                {
+                    if (!string.IsNullOrEmpty(material.DiffuseTexturePath))
+                        material.TextureId = TextureLoader.LoadTexture(Gl, material.DiffuseTexturePath);
+                }
             }
             cat1 = ObjResourceReader.CreateObjectWithColor(Gl, face6Color, "GardenDesigner.Resources.cat.cat.obj");
             cat2 = ObjResourceReader.CreateObjectWithColor(Gl, face7Color, "GardenDesigner.Resources.cat.cat.obj");
