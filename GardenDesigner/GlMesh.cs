@@ -72,7 +72,6 @@ public class GLSubMesh
 
         IndexCount = indexData.Count;
 
-        // Upload to OpenGL
         VAO = gl.GenVertexArray();
         VBO = gl.GenBuffer();
         EBO = gl.GenBuffer();

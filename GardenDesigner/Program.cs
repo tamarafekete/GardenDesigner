@@ -9,7 +9,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.Reflection;
 
-
 namespace Szeminarium1_24_02_17_2
 {
     internal static class Program
@@ -53,7 +52,6 @@ namespace Szeminarium1_24_02_17_2
 
         private static GlObject cat1, cat2;
         private static CatArrangementModel catArrangementModel = new(), catArrangementModel2 = new();
-        //private static GLMesh catMesh;
 
         private static float Shininess = 50;
 
@@ -69,14 +67,14 @@ namespace Szeminarium1_24_02_17_2
         private const string ViewPosVariableName = "viewPos";
         private const string ShininessVariableName = "shininess";
 
-
+        
         static void Main(string[] args)
         {
+            
             WindowOptions windowOptions = WindowOptions.Default;
             windowOptions.Title = "Garden Designer";
             windowOptions.Size = new Vector2D<int>(1000, 1000);
 
-            // on some systems there is no depth buffer by default, so we need to make sure one is created
             windowOptions.PreferredDepthBufferBits = 24;
 
             cameraDescriptor = new CameraDescriptor(gardenerArrangementModel);
@@ -116,9 +114,6 @@ namespace Szeminarium1_24_02_17_2
 
         private static void Window_Load()
         {
-            //Console.WriteLine("Load");
-
-            // set up input handling
             inputContext = window.CreateInput();
             foreach (var keyboard in inputContext.Keyboards)
             {
@@ -129,15 +124,14 @@ namespace Szeminarium1_24_02_17_2
 
             controller = new ImGuiController(Gl, window, inputContext);
 
-            // Handle resizes
             window.FramebufferResize += s =>
             {
-                // Adjust the viewport to the new window size
                 Gl.Viewport(s);
             };
 
 
             Gl.ClearColor(System.Drawing.Color.Black);
+
 
             SetUpObjects();
 
@@ -149,6 +143,7 @@ namespace Szeminarium1_24_02_17_2
             Gl.DepthFunc(DepthFunction.Lequal);
         }
 
+        
         private static void LinkProgram()
         {
             uint vshader = Gl.CreateShader(ShaderType.VertexShader);
@@ -190,24 +185,24 @@ namespace Szeminarium1_24_02_17_2
             switch (key)
             {
                 case Key.W:
-                    cameraDescriptor.MoveForward(positionMatrix); 
                     gardenerArrangementModel.MoveForward(positionMatrix);
-                    externalCameraDescriptor.MoveForward(positionMatrix);
+                    cameraDescriptor.MoveForward();
+                    externalCameraDescriptor.MoveForward();
                     break;
-                case Key.S:
-                    cameraDescriptor.MoveBackward(positionMatrix);
-                    gardenerArrangementModel.MoveBackward(positionMatrix);
-                    externalCameraDescriptor.MoveBackward(positionMatrix);
+                case Key.S:                   
+                    gardenerArrangementModel.MoveBackward(positionMatrix); 
+                    cameraDescriptor.MoveBackward();
+                    externalCameraDescriptor.MoveBackward();
                     break;
-                case Key.A:
-                    cameraDescriptor.MoveLeft(positionMatrix);
+                case Key.A:                    
                     gardenerArrangementModel.MoveLeft(positionMatrix);
-                    externalCameraDescriptor.MoveLeft(positionMatrix);
+                    cameraDescriptor.MoveLeft();
+                    externalCameraDescriptor.MoveLeft();
                     break;
-                case Key.D:
-                    cameraDescriptor.MoveRight(positionMatrix);
+                case Key.D:                    
                     gardenerArrangementModel.MoveRight(positionMatrix);
-                    externalCameraDescriptor.MoveRight(positionMatrix);
+                    cameraDescriptor.MoveRight();
+                    externalCameraDescriptor.MoveRight();
                     break;
                 case Key.E:
                     cameraDescriptor.MoveUp();  
@@ -216,20 +211,20 @@ namespace Szeminarium1_24_02_17_2
                     cameraDescriptor.MoveDown();
                     break;
                 case Key.Left:
-                    cameraDescriptor.Rotate(-5f, 0); // Rotate left (yaw)
+                    cameraDescriptor.Rotate(-5f, 0);
                     gardenerArrangementModel.RotateLeft(5f);
                     externalCameraDescriptor.Rotate(3.25f, 0);
                     break;
                 case Key.Right:
-                    cameraDescriptor.Rotate(5f, 0);  // Rotate right (yaw)
+                    cameraDescriptor.Rotate(5f, 0); 
                     gardenerArrangementModel.RotateRight(5f);
                     externalCameraDescriptor.Rotate(-3.25f, 0);
                     break;
                 case Key.Up:
-                    cameraDescriptor.Rotate(0, 5f);  // Rotate up (pitch)
+                    cameraDescriptor.Rotate(0, 5f);
                     break;
                 case Key.Down:
-                    cameraDescriptor.Rotate(0, -5f); // Rotate down (pitch)
+                    cameraDescriptor.Rotate(0, -5f);
                     break;
                 case Key.V:
                     externalCamera = !externalCamera;
@@ -370,7 +365,6 @@ namespace Szeminarium1_24_02_17_2
             {
                 throw new Exception($"{TextureUniformVariableName} uniform not found on shader.");
             }
-            // set texture 0
             Gl.Uniform1(textureLocation, 0);
 
             Gl.ActiveTexture(TextureUnit.Texture0);
@@ -484,7 +478,6 @@ namespace Szeminarium1_24_02_17_2
             Gl.BindVertexArray(cat2.Vao);
             Gl.DrawElements(GLEnum.Triangles, cat2.IndexArrayLength, GLEnum.UnsignedInt, null);
             Gl.BindVertexArray(0);
-            //catMesh.Draw(Gl);
         }
 
 
@@ -551,7 +544,7 @@ namespace Szeminarium1_24_02_17_2
             Gl.BindTexture(TextureTarget.Texture2D, ground.Texture);
 
             int texLoc = Gl.GetUniformLocation(program, TextureUniformVariableName);
-            Gl.Uniform1(texLoc, 0); // Use texture unit 0
+            Gl.Uniform1(texLoc, 0);
 
             Gl.BindVertexArray(ground.Vao);
             Gl.DrawElements(GLEnum.Triangles, ground.IndexArrayLength, GLEnum.UnsignedInt, null);
@@ -656,16 +649,12 @@ namespace Szeminarium1_24_02_17_2
             }
             cat1 = ObjResourceReader.CreateObjectWithColor(Gl, face6Color, "GardenDesigner.Resources.cat.cat.obj");
             cat2 = ObjResourceReader.CreateObjectWithColor(Gl, face7Color, "GardenDesigner.Resources.cat.cat.obj");
-            //cat = ObjModel.LoadFromFile("../../../Resources/cat/cat.obj");
-            //catMesh = new GLMesh(Gl, cat);
         }
 
 
 
         private static void Window_Closing()
         {
-           // teapot.ReleaseGlObject();
-           // glCubeRotating.ReleaseGlObject();
            ground.ReleaseGlObject();
             skyBox.ReleaseGlObject();
         }
@@ -716,7 +705,7 @@ namespace Szeminarium1_24_02_17_2
         public static uint LoadTexture(GL gl, string path)
         {
             using var image = Image.Load<Rgba32>(path);
-            image.Mutate(x => x.Flip(FlipMode.Vertical)); // Flip because OpenGL expects bottom-left origin
+            image.Mutate(x => x.Flip(FlipMode.Vertical));
 
             var pixels = new byte[image.Width * image.Height * 4];
             image.CopyPixelDataTo(pixels);

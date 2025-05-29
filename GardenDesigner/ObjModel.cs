@@ -33,10 +33,8 @@ public class ObjModel
 
     public Dictionary<string, ObjMaterial> Materials { get; } = new();
 
-    // One group per material
     public List<MaterialGroup> MaterialGroups { get; } = new();
 
-    // Each face is a tuple: (vertex index, texture index, normal index)
     public List<(int v, int vt, int vn)> Indices { get; } = new();
 
     public static ObjModel LoadFromFile(string objPath)

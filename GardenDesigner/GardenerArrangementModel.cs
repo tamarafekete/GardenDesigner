@@ -91,22 +91,5 @@
             AngleY -= Sensitivity * (yaw / 90);
         }
 
-
-        internal void AdvanceTime(double deltaTime)
-        {
-            // we do not advance the simulation when animation is stopped
-            if (!AnimationEnabeld)
-                return;
-
-            // set a simulation time
-            Time += deltaTime;
-
-            // lets produce an oscillating scale in time
-            CenterCubeScale = 1 + 0.2 * Math.Sin(1.5 * Time);
-
-            DiamondCubeAngleOwnRevolution = Time * 10;
-
-            DiamondCubeAngleRevolutionOnGlobalY = -Time;
-        }
     }
 }

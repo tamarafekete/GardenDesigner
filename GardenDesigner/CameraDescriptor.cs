@@ -6,8 +6,8 @@ namespace Szeminarium1_24_02_17_2
     internal class CameraDescriptor
     {
         public Vector3D<float> Position { get; private set; } = new(0, 1, 0);
-        public float Pitch { get; private set; } = 0; // Up/down
-        public float Yaw { get; private set; } = -90; // Left/right (starts facing -Z)
+        public float Pitch { get; private set; } = 0;
+        public float Yaw { get; private set; } = -90; 
 
         private Vector3D<float> front = -Vector3D<float>.UnitZ;
         private Vector3D<float> up = Vector3D<float>.UnitY;
@@ -26,46 +26,17 @@ namespace Szeminarium1_24_02_17_2
             return Matrix4X4.CreateLookAt(Position, Position + front, up);
         }
 
-        public void MoveForward(bool[,] positionMatrix) {
-            /*Vector3D<float> position = Position + front * MoveSpeed;
-            int posX = (int)position.X+20;
-            int posZ = (int)position.Z+20;
-            if (positionMatrix[posX, posZ])
-            {
-                Position = position;
-            }*/
+        public void MoveForward() {
             Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
             
         }
-        public void MoveBackward(bool[,] positionMatrix) { 
-            /*Vector3D<float> position = Position - front * MoveSpeed;
-            int posX = (int)position.X + 20;
-            int posZ = (int)position.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Position = position;
-            }*/
+        public void MoveBackward() { 
             Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
         }
-        public void MoveLeft(bool[,] positionMatrix) { 
-           /* Vector3D<float> position = Position - right * MoveSpeed;
-            int posX = (int)position.X + 20;
-            int posZ = (int)position.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Position = position;
-            }*/
+        public void MoveLeft() { 
             Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
         }
-        public void MoveRight(bool[,] positionMatrix) { 
-           /* Vector3D<float> position = Position + right * MoveSpeed;
-            int posX = (int)position.X + 20;
-            int posZ = (int)position.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Position = position;
-
-            }*/
+        public void MoveRight() { 
             Position = new Vector3D<float>((float)gardener.positionX, 1, (float)gardener.positionZ);
         }
         public void MoveUp() => Position += up * MoveSpeed;
@@ -76,7 +47,6 @@ namespace Szeminarium1_24_02_17_2
             Yaw += yawOffset * Sensitivity;
             Pitch += pitchOffset * Sensitivity;
 
-            // Clamp pitch to avoid gimbal lock
             Pitch = Math.Clamp(Pitch, -89f, 89f);
 
             UpdateVectors();

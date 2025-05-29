@@ -34,50 +34,22 @@ namespace Szeminarium1_24_02_17_2
             return Matrix4X4.CreateLookAt(position, Target, up);
         }
 
-        public void MoveForward(bool[,] positionMatrix)
+        public void MoveForward()
         {
-            /* Vector3D<float> target = Target + front * MoveSpeed;
-             int posX = (int)target.X + 20;
-             int posZ = (int)target.Z + 20;
-             if (positionMatrix[posX, posZ])
-             {
-                 Target = target;
-             }*/
             Target = new Vector3D<float> ( (float)gardener.positionX, 1f, (float)gardener.positionZ );
 
 
         }
-        public void MoveBackward(bool[,] positionMatrix)
+        public void MoveBackward()
         {
-            /* Vector3D<float> position = Target - front * MoveSpeed;
-             int posX = (int)position.X + 20;
-             int posZ = (int)position.Z + 20;
-             if (positionMatrix[posX, posZ])
-             {
-                 Target = position;
-             }*/
             Target = new Vector3D<float>((float)gardener.positionX, 1f, (float)gardener.positionZ);
         }
-        public void MoveLeft(bool[,] positionMatrix)
+        public void MoveLeft()
         {
-            /* Vector3D<float> position = Target - right * MoveSpeed;
-             int posX = (int)position.X + 20;
-             int posZ = (int)position.Z + 20;
-             if (positionMatrix[posX, posZ])
-             {
-                 Target = position;
-             }*/
             Target = new Vector3D<float>((float)gardener.positionX, 1f, (float)gardener.positionZ);
         }
-        public void MoveRight(bool[,] positionMatrix)
+        public void MoveRight()
         {
-            /*Vector3D<float> position = Target + right * MoveSpeed;
-            int posX = (int)position.X + 20;
-            int posZ = (int)position.Z + 20;
-            if (positionMatrix[posX, posZ])
-            {
-                Target = position;
-            }*/
             Target = new Vector3D<float>((float)gardener.positionX, 1f, (float)gardener.positionZ);
         }
 
@@ -86,15 +58,13 @@ namespace Szeminarium1_24_02_17_2
             float pitchRad = MathF.PI / 180 * Pitch;
             float yawRad = MathF.PI / 180 * Yaw;
 
-            // Spherical to Cartesian conversion for orbiting
             position.X = Target.X + Distance * MathF.Cos(pitchRad) * MathF.Sin(yawRad);
             position.Y = Target.Y + Distance * MathF.Sin(pitchRad);
             position.Z = Target.Z + Distance * MathF.Cos(pitchRad) * MathF.Cos(yawRad);
 
-            // Update directional vectors based on new position
-            front = Vector3D.Normalize(Target - position); // Direction camera is looking
-            right = Vector3D.Normalize(Vector3D.Cross(front, Vector3D<float>.UnitY)); // Right vector relative to world's up
-            up = Vector3D.Normalize(Vector3D.Cross(right, front)); // Recalculate up to keep it perpendicular
+            front = Vector3D.Normalize(Target - position); 
+            right = Vector3D.Normalize(Vector3D.Cross(front, Vector3D<float>.UnitY)); 
+            up = Vector3D.Normalize(Vector3D.Cross(right, front)); 
         }
 
 
